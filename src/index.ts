@@ -66,47 +66,59 @@ import {
 import { createFileRoute, createURLRoute } from 'electron-router-dom'
 import { join } from 'path'
 
+// Handle creating/removing shortcuts on Windows when installing/uninstalling.
+if (require('electron-squirrel-startup')) {
+  app.quit();
+}
+
 function createWindow(id: string, options: WindowOptions = {}) {
   const window = new BrowserWindow({
     width: 700,
     height: 473,
+    autoHideMenuBar: true,
     webPreferences: {
             preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
           },
     ...options,
   })
 
-  // Don't forget to check if the port is the same as your dev server
-  // const devServerURL = createURLRoute('http://localhost:3000', id)
-
   const fileRoute = createFileRoute(
-    join(__dirname, '../renderer/index.html'),
+    join(__dirname, '../renderer/main_window/index.html'),
     id
   )
-
-  // 'development' === 'development'
-  //   ? window.loadURL(devServerURL)
-  //   : window.loadFile(...fileRoute)
-  console.log(fileRoute);
-  
   // window.loadFile(...fileRoute)
-  // window.loadURL(MAIN_WINDOW_WEBPACK_ENTRY)
-    const devServerURL = createURLRoute(MAIN_WINDOW_WEBPACK_ENTRY, 'main')
-  window.loadURL(devServerURL);
-
-
-  window.webContents.openDevTools();
-
+  const devServerURL = createURLRoute(MAIN_WINDOW_WEBPACK_ENTRY, id)
+  console.log(process.env.APP_NAME);
+  console.log("=======");
+  
+  
+  if(process.env.NODE_ENV === 'development'){
+    window.loadURL(devServerURL)
+    window.webContents.openDevTools();
+    console.log(process.env.NODE_ENV);
+    console.log("dev");
+    
+  }else{
+    console.log("prod");
+    window.loadFile(...fileRoute)
+  }
   return window
 }
 app.whenReady().then(() => {
   createWindow('main', {
+    title:"Testing Main"
     // webPreferences: {
     //   preload: join(__dirname, '../renderer/main_window/preload.js'),
     // },
   })
-
   createWindow('about', {
     show: false,
+    title:"About"
   })
 })
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
